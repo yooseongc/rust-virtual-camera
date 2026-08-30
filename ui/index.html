@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rust Virtual Camera</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <strong>Rust Virtual Camera</strong>
+            <span>Windows용 로컬 가상 카메라</span>
+          </div>
+        </div>
+        <div class="status-pill" id="status-pill" data-state="off">
+          <span class="status-dot"></span>
+          <span id="status-text">준비 중…</span>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <div class="preview-column">
+          <div class="preview-card">
+            <div class="preview-toolbar">
+              <div>
+                <span class="eyebrow">LIVE PREVIEW</span>
+                <strong id="preview-label">테스트 패턴</strong>
+              </div>
+              <span class="resolution-badge" id="resolution-badge">1280 × 720 · 30 FPS</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="preview" width="1280" height="720"></canvas>
+              <div class="preview-off" id="preview-off">
+                <span class="camera-glyph"></span>
+                <strong>가상 카메라가 꺼져 있습니다</strong>
+                <span>설정을 확인한 뒤 카메라 시작을 눌러 주세요.</span>
+              </div>
+            </div>
+            <div class="connection-row">
+              <span id="connection-text">연결된 앱 없음</span>
+              <span class="safe-use">회의 · 방송 · 개발 테스트용</span>
+            </div>
+          </div>
+
+          <div class="driver-card">
+            <div class="driver-icon">D</div>
+            <div class="driver-copy">
+              <strong id="driver-title">Windows 11 가상 카메라</strong>
+              <span id="driver-text">설치 상태를 확인하는 중…</span>
+            </div>
+            <button class="secondary-button" id="driver-button">드라이버 설치</button>
+          </div>
+        </div>
+
+        <aside class="controls-card">
+          <div class="section-heading output-heading">
+            <span class="eyebrow">OUTPUT</span>
+            <h1>카메라 출력</h1>
+          </div>
+          <div class="segmented backend-segmented" role="group" aria-label="카메라 출력 방식">
+            <button type="button" data-backend="media-foundation" class="active">Windows 11</button>
+            <button type="button" data-backend="directshow">DirectShow</button>
+          </div>
+
+          <div class="divider output-divider"></div>
+
+          <div class="section-heading">
+            <span class="eyebrow">SOURCE</span>
+            <h1>영상 소스</h1>
+          </div>
+
+          <div class="segmented" role="group" aria-label="영상 소스">
+            <button type="button" data-source="test-pattern" class="active">테스트</button>
+            <button type="button" data-source="solid">단색</button>
+            <button type="button" data-source="image">이미지</button>
+            <button type="button" data-source="screen-region">화면 영역</button>
+          </div>
+
+          <div class="source-panel" id="test-pattern-panel">
+            <p>색상 막대와 움직이는 스캔 라인으로 카메라 연결을 확인합니다.</p>
+          </div>
+          <div class="source-panel hidden" id="solid-panel">
+            <label class="field-label" for="solid-color">배경 색상</label>
+            <div class="color-control">
+              <input id="solid-color" type="color" value="#7357ff" />
+              <code id="color-value">#7357FF</code>
+            </div>
+          </div>
+          <div class="source-panel hidden" id="image-panel">
+            <button type="button" class="file-button" id="image-button">
+              <span>이미지 선택</span>
+              <small id="image-name">PNG, JPG 또는 WebP</small>
+            </button>
+          </div>
+          <div class="source-panel hidden" id="screen-region-panel">
+            <button type="button" class="file-button" id="region-button">
+              <span>송출 영역 선택</span>
+              <small id="region-summary">바탕 화면에서 영역을 지정하세요</small>
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="field-grid">
+            <label>
+              <span class="field-label">해상도</span>
+              <select id="resolution">
+                <option value="640x480">640 × 480</option>
+                <option value="1280x720" selected>1280 × 720</option>
+                <option value="1920x1080">1920 × 1080</option>
+              </select>
+            </label>
+            <label>
+              <span class="field-label">프레임률</span>
+              <select id="fps">
+                <option value="24">24 FPS</option>
+                <option value="30" selected>30 FPS</option>
+                <option value="60">60 FPS</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="toggle-row">
+            <span><strong>좌우 반전</strong><small>셀프뷰처럼 영상을 뒤집습니다.</small></span>
+            <input id="mirror" type="checkbox" /><i></i>
+          </label>
+
+          <div class="divider"></div>
+
+          <label class="toggle-row">
+            <span><strong>Windows 시작 시 실행</strong><small>로그인 후 트레이에서 시작합니다.</small></span>
+            <input id="autostart" type="checkbox" /><i></i>
+          </label>
+
+          <label class="toggle-row">
+            <span><strong>앱 실행 시 카메라 시작</strong><small>마지막 설정을 자동으로 적용합니다.</small></span>
+            <input id="start-on-launch" type="checkbox" /><i></i>
+          </label>
+
+          <div class="action-area">
+            <button type="button" class="primary-button" id="camera-button">
+              <span class="power-icon"></span>
+              <span id="camera-button-text">카메라 시작</span>
+            </button>
+            <p id="feedback" role="status"></p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div class="region-modal hidden" id="region-modal" role="dialog" aria-modal="true" aria-labelledby="region-modal-title">
+      <div class="region-dialog">
+        <div class="region-dialog-header">
+          <div>
+            <span class="eyebrow">SCREEN REGION</span>
+            <h2 id="region-modal-title">송출할 영역을 드래그하세요</h2>
+          </div>
+          <span class="region-hint">모든 모니터가 한 화면에 표시됩니다.</span>
+        </div>
+        <div class="region-preview" id="region-preview">
+          <img id="region-preview-image" alt="데스크톱 미리보기" draggable="false" />
+          <div class="region-selection" id="region-selection"></div>
+        </div>
+        <div class="region-dialog-actions">
+          <button type="button" class="secondary-button" id="region-cancel">취소</button>
+          <button type="button" class="primary-button compact" id="region-confirm">이 영역 사용</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
